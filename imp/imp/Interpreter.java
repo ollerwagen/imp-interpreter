@@ -71,6 +71,16 @@ class Interpreter implements AExp.Visitor<Integer>, BExp.Visitor<Boolean>, Stm.V
         }
     }
 
+    public Void visitBExp(Stm.BExp stm) {
+        System.out.println("==> " + (stm.bexp.accept(this) ? "true" : "false"));
+        return null;
+    }
+
+    public Void visitAExp(Stm.AExp stm) {
+        System.out.println("==> " + stm.aexp.accept(this));
+        return null;
+    }
+
     public Void visitSeq(Stm.Seq stm) {
         for (Stm s : stm.stms) {
             s.accept(this);

@@ -12,6 +12,8 @@ class Parser {
     private int index;
     private List<Token> program;
 
+    private boolean reportError = true;
+
     public Parser() {}
 
     Stm parse(List<Token> input) {
@@ -29,7 +31,9 @@ class Parser {
     }
 
     private void logError(Token token, String message) throws ParseException {
-        Imp.logCompileError(token, message);
+        if (reportError) {
+            Imp.logCompileError(token, message);
+        }
         throw new ParseException();
     }
 
@@ -65,6 +69,8 @@ class Parser {
                 Stm body = parseStm();
                 expect(END, "Expect 'end' after body in 'while' block.");
                 stms.add(new Stm.While(condition, body));
+            } else {
+                stms.add(parseExpStm());
             }
 
             if (peek().type == SEMICOLON) {
@@ -75,6 +81,54 @@ class Parser {
         }
 
         return new Stm.Seq(stms);
+    }
+
+    private Stm parseExpStm() {
+        switch (peek().type) {
+            case NOT:
+                advance();
+                return new Stm.BExp(new BExp.Not(parseBExp()));
+            default:
+                int prev_index = index;
+                reportError = false;
+                Stm result = null;
+                try { // parse BExp [And|Or] BExp
+                    if (advance().type != LPAREN) {
+                        throw new ParseException();
+                    }
+                    BExp left = parseBExp();
+                    Token op = advance();
+                    BExp right = parseBExp();
+                    expect(RPAREN, "Expect ')' after group expression.");
+                    if (op.type == AND || op.type == OR) {
+                        result = new Stm.BExp(new BExp.Binary(left, right, op));
+                    } else {
+                        throw new ParseException();
+                    }
+                } catch (ParseException e) {
+                    index = prev_index;
+                    try {
+                        AExp left = parseAExp();
+                        if (peek().type == EQUAL || peek().type == NOT_EQUAL || peek().type == GREATER ||
+                                peek().type == GREATER_EQUAL || peek().type == LESS || peek().type == LESS_EQUAL) {
+                            Token op = advance();
+                            AExp right = parseAExp();
+                            result = new Stm.BExp(new BExp.Comparison(left, right, op));
+                        } else {
+                            result = new Stm.AExp(left);
+                        }
+                    } catch (ParseException e2) {
+                        result = null;
+                    }
+                }
+                reportError = true;
+
+                if (result == null) {
+                    logError(program.get(prev_index), "Erroneous Expression.");
+                }
+
+                return result;
+        }
     }
 
     // ( BExp [and|or] BExp )
@@ -109,7 +163,7 @@ class Parser {
                             op.type == LESS_EQUAL || op.type == GREATER || op.type == GREATER_EQUAL) {
                         return new BExp.Comparison(left, right, op);
                     } else {
-                        logError(op, "Illegal Operator.");
+                        logError(op, "Illegal Comparison Operator.");
                     }
                 }
         }
@@ -132,7 +186,7 @@ class Parser {
                 if (op.type == PLUS || op.type == MINUS || op.type == TIMES) {
                     return new AExp.Binary(left, right, op);
                 } else {
-                    logError(op, "Illegal Operator.");
+                    logError(op, "Illegal Arithmetic Operator.");
                 }
             default:
                 logError(advance(), "Unexpected Token.");

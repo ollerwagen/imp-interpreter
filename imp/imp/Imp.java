@@ -71,7 +71,13 @@ public class Imp {
         }
 
         Parser parser = new Parser();
-        Stm tree = parser.parse(tokens);
+
+        Stm tree = null;
+        try {
+            tree = parser.parse(tokens);
+        } catch (RuntimeException e) {
+            hadError = true;
+        }
 
         if (hadError) {
             System.err.println("Parsing Error. Aborting.");

@@ -94,12 +94,38 @@ abstract class Stm {
     abstract <T> T accept(Visitor<T> v);
 
     interface Visitor<T> {
+        T visitAExp(AExp aexp);
+        T visitBExp(BExp bexp);
         T visitSeq(Seq stm);
         T visitSkip(Skip stm);
         T visitPrint(Print stm);
         T visitAssign(Assign stm);
         T visitIfElse(IfElse stm);
         T visitWhile(While stm);
+    }
+
+    static class AExp extends Stm {
+        imp.AExp aexp;
+        AExp(imp.AExp aexp) {
+            this.aexp = aexp;
+        }
+
+        @Override
+        public <T> T accept(Visitor<T> v) {
+            return v.visitAExp(this);
+        }
+    }
+
+    static class BExp extends Stm {
+        imp.BExp bexp;
+        BExp(imp.BExp bexp) {
+            this.bexp = bexp;
+        }
+
+        @Override
+        public <T> T accept(Visitor<T> v) {
+            return v.visitBExp(this);
+        }
     }
 
     static class Seq extends Stm {
@@ -134,8 +160,8 @@ abstract class Stm {
 
     static class Assign extends Stm {
         Token left;
-        AExp right;
-        Assign(Token left, AExp right) {
+        imp.AExp right;
+        Assign(Token left, imp.AExp right) {
             this.left = left;
             this.right = right;
         }
@@ -147,9 +173,9 @@ abstract class Stm {
     }
 
     static class IfElse extends Stm {
-        BExp condition;
+        imp.BExp condition;
         Stm taken, notTaken;
-        IfElse(BExp condition, Stm taken, Stm notTaken) {
+        IfElse(imp.BExp condition, Stm taken, Stm notTaken) {
             this.condition = condition;
             this.taken = taken;
             this.notTaken = notTaken;
@@ -162,9 +188,9 @@ abstract class Stm {
     }
 
     static class While extends Stm {
-        BExp condition;
+        imp.BExp condition;
         Stm body;
-        While(BExp condition, Stm body) {
+        While(imp.BExp condition, Stm body) {
             this.condition = condition;
             this.body = body;
         }

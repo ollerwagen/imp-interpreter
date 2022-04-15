@@ -24,6 +24,14 @@ class PrettyPrinter implements AExp.Visitor<String>, BExp.Visitor<String>, Stm.V
         return bexp.left.accept(this) + " " + bexp.op.lexeme + " " + bexp.right.accept(this);
     }
 
+    public String visitAExp(Stm.AExp stm) {
+        return stm.aexp.accept(this);
+    }
+
+    public String visitBExp(Stm.BExp stm) {
+        return stm.bexp.accept(this);
+    }
+
     public String visitSeq(Stm.Seq stm) {
         StringBuilder stringBuilder = new StringBuilder();
         for (Stm s : stm.stms) {
