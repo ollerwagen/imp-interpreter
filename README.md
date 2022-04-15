@@ -4,12 +4,12 @@ Interpreter for the IMP programming language (FMFP thingy)
 
 ## Compilation
 
-Compile the IMP Interpreter with `javac imp/imp/*.java`
+In the folder `imp`, Compile the IMP Interpreter with `javac imp/*.java`
 The Interpreter is already compiled though, so this step is not necessary unless you change some code because you think you're better than me, motherfucker.
 
 ## Execution
 
-So far, the IMP Interpreter only supports REPL. Run the interpreter by: `cd imp; java imp.Imp`. I don't know why you have to switch directory, but otherwise it doesn't work and I'm too lazy to figure out why.
+So far, the IMP Interpreter only supports REPL. In the folder `imp` run the interpreter by: `java imp.Imp`.
 
 If you specify `-multiline` when executing the interpreter, you can enter code until you end a line with a `!` character.
 
