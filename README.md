@@ -13,6 +13,8 @@ So far, the IMP Interpreter only supports REPL. Run the interpreter by: `cd imp;
 
 If you specify `-multiline` when executing the interpreter, you can enter code until you end a line with a `!` character.
 
+It is also possible to directly enter arithmetic or boolean expressions in the REPL window which are evaluated and the result printed to the console. Right now, the error messages generated for such expressions are quite lackluster though.
+
 ## The Language
 
 I extended the language by an additional command `print` (used the same way as `skip`) in order to print the names and values of all variables.
