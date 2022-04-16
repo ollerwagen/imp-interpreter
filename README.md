@@ -2,6 +2,10 @@
 
 Interpreter for the IMP programming language (FMFP thingy)
 
+## IMP 2.0
+
+This version implements the same features, I just got tired of the disgusting parser for the first version. The error messages are still questionable and the parser is still objectively terrible, but less so than before.
+
 ## Compilation
 
 In the folder `imp`, Compile the IMP Interpreter with `javac imp/*.java`
