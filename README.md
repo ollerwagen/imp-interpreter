@@ -11,6 +11,10 @@ This version implements the same features, I just got tired of the disgusting pa
 In the folder `imp`, Compile the IMP Interpreter with `javac imp/*.java`
 The Interpreter is already compiled though, so this step is not necessary unless you change some code because you think you're better than me, motherfucker.
 
+## Error Messages
+
+I use error productions (allowing a larger grammar that contains some faulty expressions) to produce better error messages. For example, the parser recognizes binary arithmetic expressions that are not surrounded by parentheses to then produce an error message that clarifies that IMP enforces parentheses around such expressions.
+
 ## Execution
 
 So far, the IMP Interpreter only supports REPL. In the folder `imp` run the interpreter by: `java imp.Imp`.
@@ -31,7 +35,7 @@ A consequence of this is e.g. the following: `if <some condition> then c := 0 el
 
 ### Semicola
 
-If multiple instructions are added after one another, they need to be separated by semicola. This -- as specified by the language's grammar discussed in the lecture -- even holds for `if` and `while` statements.
+If multiple instructions are added after one another, they need to be separated by semicola. This -- as specified by the language's grammar discussed in the lecture -- even holds for `if` and `while` statements. The last instruction in a sequence of instructions can (but doesn't have to be) terminated by a semicolon. As specified in the lecture, we allow for some leeway compared to the formal grammar of the language because it makes our lives easier.
 
 ## Example
 
