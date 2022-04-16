@@ -30,7 +30,7 @@ class Parser {
         }
 
         try {
-            Stm result = new Stm.SB(parseBoolean());
+            Stm result = new Stm.SB(parseBooleanWithErrorProductions());
             if (index < tokens.size() - 1) {
                 throw new ParseFail(peek(), "Unexpected Token.", 1);
             }
@@ -40,7 +40,7 @@ class Parser {
         }
 
         try {
-            Stm result = new Stm.SA(parseArithmetic());
+            Stm result = new Stm.SA(parseArithmeticWithErrorProductions());
             if (index < tokens.size() - 1) {
                 throw new ParseFail(peek(), "Unexpected Token.", 1);
             }
@@ -123,7 +123,7 @@ class Parser {
         try {
             String name = expect("Expect Identifier for Assignment Statement", 0.1, IDENTIFIER).lexeme;
             expect("Expect ':=' as an assignment operator.", 0.1, ASSIGN);
-            AExp exp = parseArithmetic();
+            AExp exp = parseArithmeticWithErrorProductions();
             return new Stm.Assign(name, exp);
         } catch (ParseFail fail) {
             index = prev_index;
@@ -136,7 +136,7 @@ class Parser {
 
         try {
             expect("Expect 'if' Token in Conditional Statement.", 0, IF);
-            BExp condition = parseBoolean();
+            BExp condition = parseBooleanWithErrorProductions();
             expect("Expect 'then' Token in 'if' Statement.", 0.95, THEN);
             Stm taken = parseStm();
             expect("Expect 'else' Token in 'if' Statement.", 0.95, ELSE);
@@ -154,13 +154,47 @@ class Parser {
 
         try {
             expect("Expect 'while' Token in Loop Statement.", 0, WHILE);
-            BExp condition = parseBoolean();
+            BExp condition = parseBooleanWithErrorProductions();
             expect("Expect 'do' Token in 'while' Statement.", 0.95, DO);
             Stm body = parseStm();
             expect("Expect 'end' Token in 'while' Statement.", 0.95, END);
             return new Stm.While(condition, body);
         } catch (ParseFail fail) {
             index = prev_index;
+            throw fail;
+        }
+    }
+
+    private BExp parseBooleanWithErrorProductions() {
+        ParseFail fail = new ParseFail(null, null, -1);
+
+        boolean forcethrow = false;
+        int prev_index = index;
+
+        try {
+            parseBoolean(); // left
+            Token operator = advance();
+            parseBoolean(); // right
+
+            if (operator.type == AND || operator.type == OR) {
+                forcethrow = true;
+                throw new ParseFail(operator, "Binary Boolean Expression must be enclosed by Braces.", 2);
+            } else {
+                throw fail;
+            }
+        } catch (ParseFail f) {
+            index = prev_index;
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
+
+            if (forcethrow) {
+                throw fail;
+            }
+        }
+
+        try {
+            return parseBoolean();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -192,9 +226,9 @@ class Parser {
         int prev_index = index;
 
         try {
-            AExp left = parseArithmetic();
+            AExp left = parseArithmeticWithErrorProductions();
             Token operator = advance();
-            AExp right = parseArithmetic();
+            AExp right = parseArithmeticWithErrorProductions();
             switch (operator.type) {
                 case EQUAL:
                     return new BExp.Comparison(left, right, BExp.Comparison.OpType.EQ);
@@ -220,9 +254,9 @@ class Parser {
     private BExp parseBooleanNot() {
         int prev_index = index;
 
-        expect("Expect 'not' token for boolean negation operation.", 0, NOT);
         try {
-            return new BExp.Not(parseBoolean());
+            expect("Expect 'not' token for boolean negation operation.", 0, NOT);
+            return new BExp.Not(parseBooleanWithErrorProductions());
         } catch (ParseFail fail) {
             index = prev_index;
             throw fail;
@@ -232,8 +266,8 @@ class Parser {
     private BExp parseBooleanBinary() {
         int prev_index = index;
 
-        expect("Binary Boolean Expressions must open with a '('.", 0.05, LPAREN);
         try {
+            expect("Binary Boolean Expressions must open with a '('.", 0.05, LPAREN);
             BExp left = parseBoolean();
             Token operator = advance();
             BExp right = parseBoolean();
@@ -248,6 +282,40 @@ class Parser {
             }
         } catch (ParseFail fail) {
             index = prev_index;
+            throw fail;
+        }
+    }
+
+    private AExp parseArithmeticWithErrorProductions() {
+        ParseFail fail = new ParseFail(null, null, -1);
+
+        boolean forcethrow = false;
+        int prev_index = index;
+
+        try {
+            parseArithmetic(); // left
+            Token operator = advance();
+            parseArithmetic(); // right
+
+            if (operator.type == PLUS || operator.type == MINUS || operator.type == TIMES) {
+                forcethrow = true;
+                throw new ParseFail(operator, "Binary Arithmetic Expression must be enclosed by Braces.", 2);
+            } else {
+                throw fail;
+            }
+        } catch (ParseFail f) {
+            index = prev_index;
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
+
+            if (forcethrow) {
+                throw fail;
+            }
+        }
+
+        try {
+            return parseArithmetic();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -272,8 +340,8 @@ class Parser {
     private AExp parseArithmeticBinary() {
         int prev_index = index;
 
-        expect("Binary Arithmetic Expressions must open with a '('.", 0.1, LPAREN);
         try {
+            expect("Binary Arithmetic Expressions must open with a '('.", 0.1, LPAREN);
             AExp left = parseArithmetic();
             Token operator = advance();
             AExp right = parseArithmetic();
