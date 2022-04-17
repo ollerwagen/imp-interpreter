@@ -4,7 +4,7 @@ Interpreter for the IMP programming language (FMFP thingy)
 
 ## IMPI 2.0
 
-This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible. It also comes with a debugger that executes instructions one step at a time by specifying `-debug` or `-d` in the argument list when executing the program.
+This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible. It also features a debugger (technically using that word is an insult to actual debuggers) that executes instructions one step at a time by specifying `-debug` or `-d` in the argument list when executing the program.
 
 IMPI 2.0 can be compiled in the directory `imp2` with `javac imp2/*.java` and executed by `java imp2.Imp`, followed by the program arguments.
 
