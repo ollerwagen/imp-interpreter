@@ -192,6 +192,22 @@ class Parser {
         }
 
         try {
+            expect("", 0, LPAREN);
+            parseBooleanWithErrorProductions();
+            expect("", 0, RPAREN);
+
+            forcethrow = true;
+            throw new ParseFail(tokens.get(prev_index), "Boolean Expressions cannot be surrounded by additional Parentheses.", 2);
+        } catch (ParseFail f) {
+            index = prev_index;
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
+
+            if (forcethrow) {
+                throw fail;
+            }
+        }
+
+        try {
             return parseBoolean();
         } catch (ParseFail f) {
             fail = (fail.likelihood > f.likelihood) ? fail : f;
@@ -292,6 +308,7 @@ class Parser {
         boolean forcethrow = false;
         int prev_index = index;
 
+        // No Parentheses
         try {
             parseArithmetic(); // left
             Token operator = advance();
@@ -303,6 +320,22 @@ class Parser {
             } else {
                 throw fail;
             }
+        } catch (ParseFail f) {
+            index = prev_index;
+            fail = (fail.likelihood > f.likelihood) ? fail : f;
+
+            if (forcethrow) {
+                throw fail;
+            }
+        }
+
+        try {
+            expect("", 0, LPAREN);
+            parseArithmeticWithErrorProductions();
+            expect("", 0, RPAREN);
+
+            forcethrow = true;
+            throw new ParseFail(tokens.get(prev_index), "Arithmetic Expressions cannot be surrounded by additional Parentheses.", 2);
         } catch (ParseFail f) {
             index = prev_index;
             fail = (fail.likelihood > f.likelihood) ? fail : f;
@@ -409,7 +442,7 @@ class Parser {
     }
 }
 
-/* Program Grammar (REPL)
+/* Program Grammar (REPL):
  * 
  * Stm -> "skip" | "print" | Var ":=" AExp | Stm ";" | Stm ";" Stm |
  *          "if" BExp "then" Stm "else" Stm "end" |
@@ -419,4 +452,9 @@ class Parser {
  * BExp -> "(" BExp [and|or] BExp ")" | "not" BExp | AExp RelOp AExp
  * 
  * AExp -> "(" AExp ArOp AExp ")" | Var | Number
+ * 
+ * Rules for Error Productions:
+ * AExp -> AExp ArOp AExp | "(" AExp ")"
+ * BExp -> BExp [and|or] BExp | "(" BExp ")"
+ * 
  */

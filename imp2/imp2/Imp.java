@@ -8,12 +8,17 @@ import java.util.List;
 
 public class Imp {
 
-    private static boolean hadError, multiline;
+    private static boolean hadError, multiline, debug;
+
     private static Interpreter interpreter;
+    private static Debugger debugger;
 
     public static void main(String[] args) {
         multiline = Arrays.asList(args).contains("-multiline") ||
                 Arrays.asList(args).contains("-m");
+
+        debug = Arrays.asList(args).contains("-debug") ||
+                Arrays.asList(args).contains("-d");
 
         repl();
     }
@@ -62,7 +67,11 @@ public class Imp {
         //Printer printer = new Printer();
         //System.out.println(printer.print(tree));
 
-        interpreter.interpret(tree);
+        if (debug) {
+            debugger.debug(tree);
+        } else {
+            interpreter.interpret(tree);
+        }
 
         if (hadError) {
             log("Runtime Error. Aborting.");
@@ -72,13 +81,13 @@ public class Imp {
 
     private static String readREPL(BufferedReader reader) throws IOException {
         if (!multiline) {
-            System.out.print("--> ");
+            System.out.print(">> ");
             return reader.readLine();
         } else {
-            System.out.print("--> ");
+            System.out.print(">> ");
             String res = reader.readLine();
             while (res != null && (res.isEmpty() || res.charAt(res.length() - 1) != '!')) {
-                System.out.print("  > ");
+                System.out.print(">> ");
                 String tmp = reader.readLine();
                 if (tmp == null) {
                     res = null;
@@ -100,6 +109,7 @@ public class Imp {
     private static void reset() {
         hadError = false;
         interpreter = new Interpreter();
+        debugger = new Debugger();
     }
 
     private static void markError() {
@@ -111,7 +121,7 @@ public class Imp {
     }
 
     static void logDirectError(Token token, String message) {
-        System.err.println("Error at " + token + ": " + message);
+        System.err.println("\033[31mError at " + token + ": " + message + "\033[0m");
         markError();
     }
 }
