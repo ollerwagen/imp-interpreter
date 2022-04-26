@@ -154,6 +154,8 @@ public class Lexer {
             case "if":    type = IF;    break;
             case "then":  type = THEN;  break;
             case "else":  type = ELSE;  break;
+            case "true":  type = TRUE;  break;
+            case "false": type = FALSE; break;
             case "do":    type = DO;    break;
             case "while": type = WHILE; break;
             case "skip":  type = SKIP;  break;

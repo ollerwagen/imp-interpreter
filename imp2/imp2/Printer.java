@@ -70,6 +70,13 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
         return bexp.left.accept(this) + op + bexp.right.accept(this);
     }
 
+    public String visitAtomic(BExp.Atomic bexp) {
+        switch (bexp.type) {
+            case TRUE: return "true";
+            default:   return "false";
+        }
+    }
+
     public String visitBinary(AExp.Binary aexp) {
         String op = " + ";
         switch (aexp.operator) {

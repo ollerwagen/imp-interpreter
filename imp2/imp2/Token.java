@@ -30,6 +30,9 @@ enum TokenType
     THEN,               // then
     ELSE,               // else
 
+    TRUE,               // true
+    FALSE,              // false
+
     DO,                 // do
     WHILE,              // while
 

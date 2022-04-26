@@ -218,6 +218,14 @@ class Parser {
     private BExp parseBoolean() {
         ParseFail fail = new ParseFail(null, null, -1);
 
+        if (peek().type == TRUE) {
+            advance();
+            return new BExp.Atomic(BExp.Atomic.Type.TRUE);
+        } else if (peek().type == FALSE) {
+            advance();
+            return new BExp.Atomic(BExp.Atomic.Type.FALSE);
+        }
+
         try {
             return parseBooleanBinary();
         } catch (ParseFail f) {

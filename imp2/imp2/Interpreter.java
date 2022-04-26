@@ -69,7 +69,7 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
     }
 
     public Void visitBExp(Stm.SB stm) {
-        System.out.println("==> " + stm.exp.accept(this));
+        System.out.println("==> " + (stm.exp.accept(this) ? "\033[3mtt\033[0m" : "\033[3mff\033[0m"));
         return null;
     }
 
@@ -104,6 +104,13 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             case GEQ: return left >= right;
             case L:   return left <  right;
             default:  return left <= right; // '<='
+        }
+    }
+
+    public Boolean visitAtomic(BExp.Atomic bexp) {
+        switch (bexp.type) {
+            case TRUE: return true;
+            default:   return false;
         }
     }
 

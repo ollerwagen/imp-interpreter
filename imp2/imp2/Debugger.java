@@ -135,6 +135,13 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
         }
     }
 
+    public Boolean visitAtomic(BExp.Atomic bexp) {
+        switch (bexp.type) {
+            case TRUE: return true;
+            default:   return false;
+        }
+    }
+
     public Integer visitBinary(AExp.Binary aexp) {
         Integer left = aexp.left.accept(this), right = aexp.right.accept(this);
 

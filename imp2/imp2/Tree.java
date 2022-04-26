@@ -125,6 +125,7 @@ abstract class BExp {
         T visitBinary(Binary bexp);
         T visitNot(Not bexp);
         T visitComparison(Comparison bexp);
+        T visitAtomic(Atomic bexp);
     }
 
     static class Binary extends BExp {
@@ -171,6 +172,20 @@ abstract class BExp {
         @Override
         <T> T accept(Visitor<T> visitor) {
             return visitor.visitComparison(this);
+        }
+    }
+
+    static class Atomic extends BExp {
+        enum Type { TRUE, FALSE }
+        Type type;
+
+        Atomic(Type type) {
+            this.type = type;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitAtomic(this);
         }
     }
 }
