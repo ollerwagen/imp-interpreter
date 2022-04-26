@@ -26,7 +26,7 @@ class Parser {
             }
             return result;
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
@@ -36,7 +36,7 @@ class Parser {
             }
             return result;
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
@@ -46,7 +46,7 @@ class Parser {
             }
             return result;
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             logError(fail.where, fail.message);
         }
 
@@ -89,25 +89,25 @@ class Parser {
         try {
             return parseStmSingle();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseStmIf();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseStmWhile();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseStmAssign();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -139,8 +139,11 @@ class Parser {
             BExp condition = parseBooleanWithErrorProductions();
             expect("Expect 'then' Token in 'if' Statement.", 0.95, THEN);
             Stm taken = parseStm();
-            expect("Expect 'else' Token in 'if' Statement.", 0.95, ELSE);
-            Stm notTaken = parseStm();
+            Stm notTaken = new Stm.Single(Stm.Single.Type.SKIP);
+            if (peek().type == ELSE) {
+                advance(); // 'else' token
+                notTaken = parseStm();
+            }
             expect("Expect 'end' Token in 'if' Statement.", 0.95, END);
             return new Stm.If(condition, taken, notTaken);
         } catch (ParseFail fail) {
@@ -184,7 +187,7 @@ class Parser {
             }
         } catch (ParseFail f) {
             index = prev_index;
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
 
             if (forcethrow) {
                 throw fail;
@@ -200,7 +203,7 @@ class Parser {
             throw new ParseFail(tokens.get(prev_index), "Boolean Expressions cannot be surrounded by additional Parentheses.", 2);
         } catch (ParseFail f) {
             index = prev_index;
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
 
             if (forcethrow) {
                 throw fail;
@@ -210,7 +213,7 @@ class Parser {
         try {
             return parseBoolean();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -229,19 +232,19 @@ class Parser {
         try {
             return parseBooleanBinary();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseBooleanNot();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseBooleanComparison();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -330,7 +333,7 @@ class Parser {
             }
         } catch (ParseFail f) {
             index = prev_index;
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
 
             if (forcethrow) {
                 throw fail;
@@ -346,7 +349,7 @@ class Parser {
             throw new ParseFail(tokens.get(prev_index), "Arithmetic Expressions cannot be surrounded by additional Parentheses.", 2);
         } catch (ParseFail f) {
             index = prev_index;
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
 
             if (forcethrow) {
                 throw fail;
@@ -356,7 +359,7 @@ class Parser {
         try {
             return parseArithmetic();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -367,13 +370,13 @@ class Parser {
         try {
             return parseArithmeticBinary();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseArithmeticAtomic();
         } catch (ParseFail f) {
-            fail = (fail.likelihood > f.likelihood) ? fail : f;
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
             throw fail;
         }
     }
@@ -404,7 +407,7 @@ class Parser {
     }
 
     private AExp parseArithmeticAtomic() {
-        return new AExp.Atomic(expect("Unexpected Atomic Token.", 0.3, IDENTIFIER, NUMBER));
+        return new AExp.Atomic(expect("Unexpected Atomic Token.", 0, IDENTIFIER, NUMBER));
     }
 
     private Token expect(String errorMessage, double likelihood, TokenType... types) {
