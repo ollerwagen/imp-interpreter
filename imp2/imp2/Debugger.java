@@ -157,7 +157,7 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
             if (variables.containsKey(aexp.atom.lexeme)) {
                 return variables.get(aexp.atom.lexeme);
             } else {
-                throw new DebugException(aexp.atom, "Undefined Variable.");
+                return 0;
             }
         } else { // aexp.atom.type == NUMBER
             try {

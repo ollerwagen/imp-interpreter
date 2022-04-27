@@ -69,12 +69,12 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
     }
 
     public Void visitBExp(Stm.SB stm) {
-        System.out.println("==> " + (stm.exp.accept(this) ? "\033[3mtt\033[0m" : "\033[3mff\033[0m"));
+        System.out.println("==> \033[3m" + (stm.exp.accept(this) ? "tt" : "ff") + "\033[0m");
         return null;
     }
 
     public Void visitAExp(Stm.SA stm) {
-        System.out.println("==> " + stm.exp.accept(this));
+        System.out.println("==> \033[3m" + stm.exp.accept(this) + "\033[0m");
         return null;
     }
 
@@ -129,7 +129,7 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             if (variables.containsKey(aexp.atom.lexeme)) {
                 return variables.get(aexp.atom.lexeme);
             } else {
-                throw new InterpreterException(aexp.atom, "Variable Not Defined.");
+                return 0;
             }
         } else { // NUMBER
             try {
