@@ -8,11 +8,20 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
         return stm.accept(this);
     }
 
+    public String visitNd(Stm.Nd stm) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(stm.stms.get(0).accept(this));
+        for (int i = 1; i < stm.stms.size(); i++) {
+            stringBuilder.append(" | ").append(stm.stms.get(i).accept(this));
+        }
+        return stringBuilder.toString();
+    }
+
     public String visitSingle(Stm.Single stm) {
-        if (stm.type == Stm.Single.Type.PRINT) {
-            return "print";
-        } else {
-            return "skip";
+        switch (stm.type) {
+            case PRINT: return "print";
+            case SKIP:  return "skip";
+            default:    return "abort";
         }
     }
 
@@ -30,6 +39,11 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
             stm.body.accept(this) + " end";
     }
 
+    public String visitVar(Stm.Var stm) {
+        return "var " + stm.name + " := " + stm.decl.accept(this) + " in " +
+            stm.body.accept(this) + " end";
+    }
+
     public String visitSeq(Stm.Seq stm) {
         if (stm.stms.isEmpty()) { return ""; }
 
@@ -38,6 +52,46 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
             stringBuilder.append(stm.stms.get(i).accept(this)).append("; ");
         }
         stringBuilder.append(stm.stms.get(stm.stms.size() - 1).accept(this));
+        return stringBuilder.toString();
+    }
+
+    public String visitProcDef(Stm.ProcDef stm) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("procedure ").append(stm.name.lexeme).append("(");
+        for (int i = 0; i < stm.in.size() - 1; i++) {
+            stringBuilder.append(stm.in.get(i) + ", ");
+        }
+        if (stm.in.size() > 0) {
+            stringBuilder.append(stm.in.get(stm.in.size() - 1));
+        }
+        stringBuilder.append("; ");
+        for (int i = 0; i < stm.out.size() - 1; i++) {
+            stringBuilder.append(stm.out.get(i) + ", ");
+        }
+        if (stm.out.size() > 0) {
+            stringBuilder.append(stm.out.get(stm.out.size() - 1));
+        }
+        stringBuilder.append(") begin ").append(stm.body.accept(this)).append(" end");
+        return stringBuilder.toString();
+    }
+
+    public String visitProcCall(Stm.ProcCall stm) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(stm.name.lexeme).append("(");
+        for (int i = 0; i < stm.in.size() - 1; i++) {
+            stringBuilder.append(stm.in.get(i).accept(this)).append(", ");
+        }
+        if (stm.in.size() > 0) {
+            stringBuilder.append(stm.in.get(stm.in.size() - 1).accept(this));
+        }
+        stringBuilder.append("; ");
+        for (int i = 0; i < stm.out.size() - 1; i++) {
+            stringBuilder.append(stm.out.get(i)).append(", ");
+        }
+        if (stm.out.size() > 0) {
+            stringBuilder.append(stm.out.get(stm.out.size() - 1));
+        }
+        stringBuilder.append(")");
         return stringBuilder.toString();
     }
 

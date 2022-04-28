@@ -11,14 +11,18 @@ abstract class Stm {
         T visitAssign(Assign stm);
         T visitIf(If stm);
         T visitWhile(While stm);
+        T visitVar(Var stm);
         T visitSeq(Seq stm);
+        T visitNd(Nd stm);
+        T visitProcDef(ProcDef stm);
+        T visitProcCall(ProcCall stm);
 
         T visitBExp(SB stm);
         T visitAExp(SA stm);
     }
 
     static class Single extends Stm {
-        enum Type { SKIP, PRINT }
+        enum Type { SKIP, PRINT, ABORT }
         Type type;
 
         Single(Type type) {
@@ -77,6 +81,23 @@ abstract class Stm {
         }
     }
 
+    static class Var extends Stm {
+        String name;
+        AExp decl;
+        Stm body;
+
+        Var(String name, AExp decl, Stm body) {
+            this.name = name;
+            this.decl = decl;
+            this.body = body;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitVar(this);
+        }
+    }
+
     static class Seq extends Stm {
         List<Stm> stms;
 
@@ -87,6 +108,54 @@ abstract class Stm {
         @Override
         <T> T accept(Visitor<T> visitor) {
             return visitor.visitSeq(this);
+        }
+    }
+
+    static class Nd extends Stm {
+        List<Stm> stms;
+
+        Nd(List<Stm> stms) {
+            this.stms = stms;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitNd(this);
+        }
+    }
+
+    static class ProcDef extends Stm {
+        Token name;
+        List<String> in, out;
+        Stm body;
+
+        ProcDef(Token name, List<String> in, List<String> out, Stm body) {
+            this.name = name;
+            this.in = in;
+            this.out = out;
+            this.body = body;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitProcDef(this);            
+        }
+    }
+
+    static class ProcCall extends Stm {
+        Token name;
+        List<AExp> in;
+        List<String> out;
+        
+        ProcCall(Token name, List<AExp> in, List<String> out) {
+            this.name = name;
+            this.in = in;
+            this.out = out;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitProcCall(this);
         }
     }
 

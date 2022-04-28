@@ -74,6 +74,12 @@ public class Lexer {
                 case ';':
                     res.add(new Token(SEMICOLON, tmpline, tmpindex, ";"));
                     break;
+                case '|':
+                    res.add(new Token(PIPE, tmpline, tmpindex, "|"));
+                    break;
+                case ',':
+                    res.add(new Token(COMMA, tmpline, tmpindex, ","));
+                    break;
 
                 default:
                     if (isNum(c)) {
@@ -148,19 +154,24 @@ public class Lexer {
         
         TokenType type = IDENTIFIER;
         switch (resString) {
-            case "and":   type = AND;   break;
-            case "or":    type = OR;    break;
-            case "not":   type = NOT;   break;
-            case "if":    type = IF;    break;
-            case "then":  type = THEN;  break;
-            case "else":  type = ELSE;  break;
-            case "true":  type = TRUE;  break;
-            case "false": type = FALSE; break;
-            case "do":    type = DO;    break;
-            case "while": type = WHILE; break;
-            case "skip":  type = SKIP;  break;
-            case "print": type = PRINT; break;
-            case "end":   type = END;   break;
+            case "and":       type = AND;       break;
+            case "or":        type = OR;        break;
+            case "not":       type = NOT;       break;
+            case "if":        type = IF;        break;
+            case "then":      type = THEN;      break;
+            case "else":      type = ELSE;      break;
+            case "var":       type = VAR;       break;
+            case "in":        type = IN;        break;
+            case "abort":     type = ABORT;     break;
+            case "true":      type = TRUE;      break;
+            case "false":     type = FALSE;     break;
+            case "do":        type = DO;        break;
+            case "while":     type = WHILE;     break;
+            case "skip":      type = SKIP;      break;
+            case "print":     type = PRINT;     break;
+            case "procedure": type = PROCEDURE; break;
+            case "begin":     type = BEGIN;     break;
+            case "end":       type = END;       break;
         }
 
         return new Token(type, tmpline, tmpindex, resString);

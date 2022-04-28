@@ -2,15 +2,18 @@ package imp2;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static imp2.TokenType.*;
 
 class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor<Integer> {
 
     Map<String, Integer> variables;
+    Map<String, Stm.ProcDef> procedures;
 
     public Interpreter() {
         variables = new HashMap<>();
+        procedures = new HashMap<>();
         reset();
     }
 
@@ -19,6 +22,8 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             tree.accept(this);
         } catch (InterpreterException e) {
             logError(e.token, e.message);
+        } catch (InterpreterAbort a) {
+            return;
         }
     }
 
@@ -28,6 +33,14 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
 
     private void reset() {
         variables.clear();
+        procedures.clear();
+    }
+
+    public Void visitNd(Stm.Nd stm) {
+        Random r = new Random();
+        int selected = (int)(r.nextDouble() * stm.stms.size());
+        stm.stms.get(selected).accept(this);
+        return null;
     }
 
     public Void visitSingle(Stm.Single stm) {
@@ -36,6 +49,8 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             for (String s : variables.keySet()) {
                 System.out.println("  " + s + " -> " + variables.get(s));
             }
+        } else if (stm.type == Stm.Single.Type.ABORT) {
+            throw new InterpreterAbort();
         }
         return null;
     }
@@ -61,10 +76,52 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
         return null;
     }
 
+    public Void visitVar(Stm.Var stm) {
+        boolean contains = variables.containsKey(stm.name);
+        Integer prev = 0;
+        if (contains) {
+            prev = variables.get(stm.name);
+        }
+        variables.put(stm.name, stm.decl.accept(this));
+        stm.body.accept(this);
+        if (contains) {
+            variables.put(stm.name, prev);
+        } else {
+            variables.remove(stm.name);
+        }
+        return null;
+    }
+
     public Void visitSeq(Stm.Seq stm) {
         for (Stm s : stm.stms) {
             s.accept(this);
         }
+        return null;
+    }
+
+    public Void visitProcDef(Stm.ProcDef stm) {
+        procedures.put(stm.name.lexeme, stm);
+        return null;
+    }
+
+    public Void visitProcCall(Stm.ProcCall stm) {
+        if (!procedures.containsKey(stm.name.lexeme)) {
+            throw new InterpreterException(stm.name, "Procedure undefined.");
+        }
+
+        Stm.ProcDef proc = procedures.get(stm.name.lexeme);
+        if (stm.in.size() != proc.in.size() || stm.out.size() != proc.out.size()) {
+            throw new InterpreterException(stm.name, "Argument Lists must match in length.");
+        }
+        Map<String, Integer> pre_vars = new HashMap<>(variables);
+        for (int i = 0; i < proc.in.size(); i++) {
+            variables.put(proc.in.get(i), stm.in.get(i).accept(this));
+        }
+        proc.body.accept(this);
+        for (int i = 0; i < proc.out.size(); i++) {
+            pre_vars.put(stm.out.get(i), variables.containsKey(proc.out.get(i)) ? variables.get(proc.out.get(i)) : 0);
+        }
+        variables = pre_vars;
         return null;
     }
 
@@ -139,6 +196,8 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             }
         }
     }
+
+    private static class InterpreterAbort extends RuntimeException {}
 
     private static class InterpreterException extends RuntimeException {
         Token token;

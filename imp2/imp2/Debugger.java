@@ -5,12 +5,14 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static imp2.TokenType.*;
 
 class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor<Integer> {
 
     Map<String, Integer> variables;
+    Map<String, Stm.ProcDef> procedures;
 
     BufferedReader reader;
     Printer printer;
@@ -19,6 +21,7 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
 
     public Debugger() {
         variables = new HashMap<>();
+        procedures = new HashMap<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
         printer = new Printer();
     }
@@ -28,6 +31,8 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
             tree.accept(this);
         } catch (DebugException e) {
             logError(e.token, e.message);
+        } catch (DebugAbort a) {
+            return;
         }
     }
 
@@ -44,6 +49,15 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
         Imp.logDirectError(token, message);
     }
 
+    public Void visitNd(Stm.Nd stm) {
+        System.out.println(indent + stm.accept(printer));
+        Random r = new Random();
+        int selected = (int)(r.nextDouble() * stm.stms.size());
+        System.out.println(selected + ". instruction selected.");
+        stm.stms.get(selected).accept(this);
+        return null;
+    }
+
     public Void visitSingle(Stm.Single stm) {
         System.out.println(indent + stm.accept(printer));
         if (stm.type == Stm.Single.Type.PRINT) {
@@ -53,6 +67,9 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
             }
         }
         awaitEnter(true);
+        if (stm.type == Stm.Single.Type.ABORT) {
+            throw new DebugAbort();
+        }
         return null;
     }
 
@@ -90,10 +107,71 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
         return null;
     }
 
+    public Void visitVar(Stm.Var stm) {
+        System.out.println(indent + stm.accept(printer));
+        awaitEnter(false);
+        boolean contains = variables.containsKey(stm.name);
+        Integer prev = 0;
+        if (contains) {
+            prev = variables.get(stm.name);
+        }
+        Integer decl = stm.decl.accept(this);
+        System.out.println("  \033[2m<assignment evaluates to " + decl + ">\033[0m");
+        awaitEnter(false);
+        variables.put(stm.name, decl);
+        stm.body.accept(this);
+        if (contains) {
+            variables.put(stm.name, prev);
+            System.out.println("  \033[2m<variable " + stm.name + " set back to " + prev + ">\033[0m");
+        } else {
+            variables.remove(stm.name);
+            System.out.println("  \033[2m<previously undeclared variable " + stm.name + " removed again>\033[0m");
+        }
+        awaitEnter(false);
+        return null;
+    }
+
     public Void visitSeq(Stm.Seq stm) {
         for (Stm s : stm.stms) {
             s.accept(this);
         }
+        return null;
+    }
+
+    public Void visitProcDef(Stm.ProcDef stm) {
+        System.out.println(indent + stm.accept(printer));
+        awaitEnter(true);
+        procedures.put(stm.name.lexeme, stm);
+        return null;
+    }
+
+    public Void visitProcCall(Stm.ProcCall stm) {
+        if (!procedures.containsKey(stm.name.lexeme)) {
+            throw new DebugException(stm.name, "Procedure undefined.");
+        }
+
+        Stm.ProcDef proc = procedures.get(stm.name.lexeme);
+        if (stm.in.size() != proc.in.size() || stm.out.size() != proc.out.size()) {
+            throw new DebugException(stm.name, "Argument Lists must match in length.");
+        }
+        Map<String, Integer> pre_vars = new HashMap<>(variables);
+        for (int i = 0; i < proc.in.size(); i++) {
+            Integer arg = stm.in.get(i).accept(this);
+            System.out.println("  Arg: " + proc.in.get(i) + " := " + stm.in.get(i).accept(printer) + " (=" + arg + ")");
+            variables.put(proc.in.get(i), arg);
+            awaitEnter(false);
+        }
+        proc.body.accept(this);
+        for (int i = 0; i < proc.out.size(); i++) {
+            Integer val = 0;
+            if (variables.containsKey(proc.out.get(i))) {
+                val = variables.get(proc.out.get(i));
+            }
+            pre_vars.put(stm.out.get(i), val);
+            System.out.println("  Ret: " + stm.out.get(i) + " := " + proc.out.get(i) + " (=" + val + ")");
+            awaitEnter(false);
+        }
+        variables = pre_vars;
         return null;
     }
 
@@ -167,6 +245,8 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
             }
         }
     }
+
+    static class DebugAbort extends RuntimeException {}
 
     static class DebugException extends RuntimeException {
         Token token;

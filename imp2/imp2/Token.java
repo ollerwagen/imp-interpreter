@@ -22,6 +22,10 @@ enum TokenType
     ASSIGN,             // :=
     SEMICOLON,          // ;
 
+    PIPE,               // |
+
+    COMMA,              // ,
+
     AND,                // and
     OR,                 // or
     NOT,                // not
@@ -29,6 +33,11 @@ enum TokenType
     IF,                 // if
     THEN,               // then
     ELSE,               // else
+
+    VAR,                // var
+    IN,                 // in
+
+    ABORT,              // abort
 
     TRUE,               // true
     FALSE,              // false
@@ -38,6 +47,9 @@ enum TokenType
 
     SKIP,               // skip
     PRINT,              // print
+
+    PROCEDURE,          // procedure
+    BEGIN,              // begin
 
     END,                // end
 

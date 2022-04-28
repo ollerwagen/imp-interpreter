@@ -4,6 +4,8 @@ import java.lang.RuntimeException;
 import java.util.ArrayList;
 import java.util.List;
 
+import imp2.Stm.ProcDef;
+
 import static imp2.TokenType.*;
 
 class Parser {
@@ -84,7 +86,25 @@ class Parser {
     }
 
     private Stm parseSingleInstruction() {
+        return parseSingleInstruction(true);
+    }
+
+    private Stm parseSingleInstruction(boolean allowNd) {
         ParseFail fail = new ParseFail(null, null, -1);
+
+        if (allowNd) {
+            try {
+                return parseStmNd();
+            } catch (ParseFail f) {
+                fail = (fail.likelihood >= f.likelihood) ? fail : f;
+            }
+        }
+
+        try {
+            return parseStmSeq();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
+        }
 
         try {
             return parseStmSingle();
@@ -105,6 +125,24 @@ class Parser {
         }
 
         try {
+            return parseStmProcDef();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
+        }
+        
+        try {
+            return parseStmProcCall();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
+        }
+
+        try {
+            return parseStmVar();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
+        }
+
+        try {
             return parseStmAssign();
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
@@ -112,9 +150,60 @@ class Parser {
         }
     }
 
+    private Stm parseStmNd() {
+        int prev_index = index;
+
+        try {
+            Stm first = parseSingleInstruction(false);
+            expect("Expect '|' between nondeterministically separated instructions.", 0.2, PIPE);
+            Stm second = parseSingleInstruction(false);
+            List<Stm> stms = new ArrayList<>();
+            stms.add(first);
+            stms.add(second);
+            while (peek().type == PIPE) {
+                advance(); // '|' token
+                stms.add(parseSingleInstruction(false));
+            }
+            return new Stm.Nd(stms);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
+    private Stm parseStmSeq() {
+        int prev_index = index;
+
+        try {
+            expect("Statement Sequences can be surrounded by parentheses.", -0.01, LPAREN);
+            Stm first = parseSingleInstruction();
+            expect("Statement Sequences must separate statements by semicola.", 0.95, SEMICOLON);
+            Stm second = parseSingleInstruction();
+            List<Stm> stms = new ArrayList<>();
+            stms.add(first);
+            stms.add(second);
+            while (peek().type == SEMICOLON) {
+                advance(); // ';' token
+                if (peek().type == RPAREN) {
+                    throw new ParseFail(peek(), "Expected Statement in Statement Sequence.", 0.95);
+                }
+                stms.add(parseSingleInstruction());
+            }
+            expect("Statement Sequences that open with a parenthesis must be closed by one.", 0.95, RPAREN);
+            return new Stm.Seq(stms);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
     private Stm parseStmSingle() {
-        Token t = expect("Expect 'print' or 'skip' for single statement.", 0.1, PRINT, SKIP);
-        return new Stm.Single(t.type == PRINT ? Stm.Single.Type.PRINT : Stm.Single.Type.SKIP);
+        Token t = expect("Expect 'print', 'skip' or 'abort' for single statement.", 0.1, PRINT, SKIP, ABORT);
+        switch (t.type) {
+            case PRINT: return new Stm.Single(Stm.Single.Type.PRINT);
+            case SKIP:  return new Stm.Single(Stm.Single.Type.SKIP);
+            default:    return new Stm.Single(Stm.Single.Type.ABORT);
+        }
     }
 
     private Stm parseStmAssign() {
@@ -162,6 +251,91 @@ class Parser {
             Stm body = parseStm();
             expect("Expect 'end' Token in 'while' Statement.", 0.95, END);
             return new Stm.While(condition, body);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
+    private Stm parseStmProcDef() {
+        int prev_index = index;
+
+        try {
+            expect("Expect 'procedure' Token in Procedure Definition.", 0, PROCEDURE);
+            Token name = expect("Procedure Definitions require a name.", 0.95, IDENTIFIER);
+            expect("Procedure Definitions require an argument list that opens with a parenthesis.", 0.95, LPAREN);
+            List<String> in = new ArrayList<>(), out = new ArrayList<>();
+            while (peek().type != SEMICOLON) {
+                in.add(expect("Procedure Definitions require identifiers as input arguments.", 0.95, IDENTIFIER).lexeme);
+                if (expect("Procedure Arguments must be separated by a comma.", 0.95, COMMA, SEMICOLON).type == SEMICOLON) {
+                    index--;
+                }
+            }
+            advance(); // ';' token
+            while (peek().type != RPAREN) {
+                out.add(expect("Procedure Definitions must be closed with a parenthesis ')'.", 0.95, IDENTIFIER).lexeme);
+                if (expect("Procedure Return Values must be separated by a comma.", 0.95, COMMA, RPAREN).type == RPAREN) {
+                    index--;
+                }
+            }
+            advance(); // ')' token
+            expect("Procedure Definitions must begin with a 'begin' keyword.", 0.95, BEGIN);
+            Stm body = parseStm();
+            expect("Procedure Definitions must be closed with an 'end' token.", 0.95, END);
+            return new Stm.ProcDef(name, in, out, body);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
+    private Stm parseStmProcCall() {
+        int prev_index = index;
+
+        try {
+            Token name = expect("Procedure Calls must begin with the procedure's name.", 0, IDENTIFIER);
+            expect("Procedure Calls must contain an argument list.", 0.2, LPAREN);
+            List<AExp> in = new ArrayList<>();
+            if (peek().type != SEMICOLON) {
+                in.add(parseArithmeticWithErrorProductions());
+            }
+            while (peek().type != SEMICOLON) {
+                if (expect("Procedure Arguments must be separated by a comma.", 0.95, COMMA, SEMICOLON).type == SEMICOLON) {
+                    index--;
+                }
+                in.add(parseArithmeticWithErrorProductions());
+            }
+            advance(); // ';' token
+            List<String> out = new ArrayList<>();
+            if (peek().type != RPAREN) {
+                out.add(expect("Procedure Call return value list must be terminated by a closing parenthesis.", 0.95, IDENTIFIER).lexeme);
+            }
+            while (peek().type != RPAREN) {
+                if (expect("Procedure Call return value list must be terminated by a closing parenthesis.", 0.95, COMMA, RPAREN).type == RPAREN) {
+                    index--;
+                }
+                out.add(expect("Procedure Call return value list must be terminated by a closing parenthesis.", 0.95, IDENTIFIER).lexeme);
+            }
+            advance(); // ')' token
+            return new Stm.ProcCall(name, in, out);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
+    private Stm parseStmVar() {
+        int prev_index = index;
+
+        try {
+            expect("Scope block must start with 'var'.", 0, VAR);
+            String name = expect("Scope block must denote a variable name.", 0.95, IDENTIFIER).lexeme;
+            expect("Expect ':=' in scope block variable definition.", 0.95, ASSIGN);
+            AExp decl = parseArithmeticWithErrorProductions();
+            expect("Expect 'in' in scope block definition.", 0.95, IN);
+            Stm body = parseStm();
+            expect("Expect 'end' at the end of a scope block.", 0.95, END);
+            return new Stm.Var(name, decl, body);
         } catch (ParseFail fail) {
             index = prev_index;
             throw fail;
