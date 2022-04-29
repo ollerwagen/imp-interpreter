@@ -155,7 +155,7 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
     }
 
     public Boolean visitComparison(BExp.Comparison bexp) {
-        Integer left = bexp.left.accept(this), right = bexp.right.accept(this);
+        int left = bexp.left.accept(this), right = bexp.right.accept(this);
 
         switch (bexp.operator) {
             case EQ:  return left == right;

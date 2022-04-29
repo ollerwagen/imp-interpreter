@@ -1,8 +1,36 @@
-procedure fac(n; res) begin
-	if n <= 1 then
+procedure divides(a, div; res) begin
+	d := div;
+	while d < a do
+		d := (d + div)
+	end;
+	if d = a then
 		res := 1
 	else
-		fac((n-1); res);
-		res := (n * res)
+		res := 0
+	end
+end;
+
+procedure isPrime(a; res) begin
+	c := 2;
+	res := 1;
+	while c < a do
+		divides(a, c; d);
+		if d = 1 then
+			res := 0;
+			c := a
+		end;
+		c := (c + 1)
+	end
+end;
+
+procedure findPrimes(c;) begin
+	a := 2;
+	while c > 0 do
+		isPrime(a; p);
+		if p = 1 then
+			print;
+			c := (c - 1)
+		end;
+		a := (a + 1)
 	end
 end
