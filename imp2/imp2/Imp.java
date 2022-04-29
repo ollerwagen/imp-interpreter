@@ -48,6 +48,8 @@ public class Imp {
             }
         } catch (IOException e) {
             log("Input Error. Aborting.");
+        } catch (ImpQuit q) {
+            log("Exit Shell.");
         }
 
         System.out.println();
@@ -55,17 +57,35 @@ public class Imp {
 
     private static void runCommand(String input) {
         String[] args = input.split("[\\s]+");
-        if (args[0].equals(":l") || args[0].equals(":load")) {
-            if (args.length < 2) {
-                System.err.println("Need to specify at least one file to load.");
-                return;
-            }
-            for (int i = 1; i < args.length; i++) {
-                if (args[i].isEmpty()) { continue; }
-                runFile(args[i]);
-            }
-        } else {
-            System.err.println("Command not found.");
+        switch (args[0]) {
+            case ":l": case ":load":
+                if (args.length < 2) {
+                    System.err.println("Need to specify at least one file to load.");
+                    return;
+                }
+                for (int i = 1; i < args.length; i++) {
+                    if (args[i].isEmpty()) { continue; }
+                    runFile(args[i]);
+                }
+                break;
+
+            case ":q": case ":quit":
+                if (args.length != 1) {
+                    System.err.println("Quit command takes no arguments.");
+                    return;
+                }
+                throw new ImpQuit();
+
+            case ":c": case ":clear":
+                if (args.length != 1) {
+                    System.err.println("Clear command takes no arguments.");
+                    return;
+                }
+                System.out.print("\033[H\033[2J");
+                break;
+
+            default:
+                System.err.println("Command not found.");
         }
     }
 
@@ -165,4 +185,6 @@ public class Imp {
     private static String lastOf(String[] a) {
         return a[a.length - 1];
     }
+
+    static class ImpQuit extends RuntimeException {}
 }

@@ -42,6 +42,8 @@ IMPI 2.0 allows the user to directly enter commands in the command line, and to 
 
 It is possible to enter arithmetic or boolean expressions which are then evaluated and the result printed to the console.
 
+`:q` (`:quit`) exits the shell, `:c` (`:clear`) clears the screen.
+
 ## The Language
 
 I extended the language by an additional command `print` which prints the program state (the values held by all defined variables). Variables which haven't been assigned a value yet are not printed, and their default value is 0, in line with the lecture's definition of variables. In the spirit of the idea that expressions don't cause side-effects, using an unassigned variable in an expression will not add it to the program state.
