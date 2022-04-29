@@ -10,22 +10,12 @@ IMPI 2.0 can be compiled in the directory `imp2` with `javac imp2/*.java` and ex
 
 It features a debugger (`-d` or `--debug` when executing the interpreter), and it allows multiline input (`-m` or `--multiline`), where the input must be terminated by a `!`.
 
-<<<<<<< HEAD
-=======
 The original version is still in this repository, but it's very bad, don't use it please.
 
->>>>>>> 30dc7111ea6272abcae8a673c7baec2d4ef428d8
 ## Grammar
 
 The following is the grammar of IMP used for this interpreter, specified in EBNF:
 
-<<<<<<< HEAD
-    <S>        <= <OuterStm> | <BExp> | <AExp>
-    <OuterStm> <= <Stm> | <ProcDef>
-    <Stm>      <= <Single> | <Assign> | <If> | <While> | <Scope> | <Seq> | <Nd> | <Call>
-    
-    <ProcDef>  <= procedure <Id> ( [ { <Id>, } <Id> ] ; [ { <Id>, } <Id> ] ) begin <Stm> end
-=======
     <S>        <= <Stm> | <ProcDef> | <BExp> | <AExp>
     <Stm>      <= <Single> | <Assign> | <If> | <While> | <Scope> | <Seq> | <Nd> | <Call>
     
@@ -45,7 +35,6 @@ The following is the grammar of IMP used for this interpreter, specified in EBNF
     
     <Id>       <= <Letter> { <Letter> | <Num> }  # where this isn't a keyword
     <Num>      <= <Digit> { <Digit> }
->>>>>>> 30dc7111ea6272abcae8a673c7baec2d4ef428d8
 
 ## Execution
 
