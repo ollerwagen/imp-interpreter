@@ -1,53 +1,76 @@
 # imp-interpreter
 
-Interpreter for the IMP programming language (FMFP thingy)
+Interpreter for the IMP programming language
 
 ## IMPI 2.0
 
-This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible. It also features a debugger (technically using that word is an insult to actual debuggers) that executes instructions one step at a time by specifying `-debug` or `-d` in the argument list when executing the program.
+This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible.
 
 IMPI 2.0 can be compiled in the directory `imp2` with `javac imp2/*.java` and executed by `java imp2.Imp`, followed by the program arguments.
 
-## Compilation
+It features a debugger (`-d` or `--debug` when executing the interpreter), and it allows multiline input (`-m` or `--multiline`), where the input must be terminated by a `!`.
 
-In the folder `imp`, Compile the IMP Interpreter with `javac imp/*.java`
-The Interpreter is already compiled though, so this step is not necessary unless you change some code because you think you're better than me, motherfucker.
+The original version is still in this repository, but it's very bad, don't use it please.
+
+## Grammar
+
+The following is the grammar of IMP used for this interpreter, specified in EBNF:
+
+    <S>        <= <Stm> | <ProcDef> | <BExp> | <AExp>
+    <Stm>      <= <Single> | <Assign> | <If> | <While> | <Scope> | <Seq> | <Nd> | <Call>
+    
+    <ProcDef>  <= 'procedure' <Id> '(' [ { <Id> ',' } <Id> ] ; [ { <Id> ',' } <Id> ] ')' 'begin' <Stm> 'end'
+    
+    <Single>   <= 'abort' | 'print' | 'skip'
+    <Assign>   <= <Id> ':=' <AExp>
+    <If>       <= 'if' <BExp> 'then' <Stm> [ 'else' <Stm> ] 'end'
+    <While>    <= 'while' <BExp> 'do' <Stm> 'end'
+    <Scope>    <= 'var' <Assign> 'in' <Stm> 'end'
+    <Seq>      <= '(' <Stm> ';' <Stm> { ';' <Stm> } ')' | <Stm> { ';' <Stm> } [;]
+    <Nd>       <= <Stm> '|' <Stm> { '|' <Stm> }
+    <Call>     <= <Id> '(' [ { <AExp> ',' } <AExp> ] ';' [ { <Id> ',' } <Id> ] ')'
+    
+    <BExp>     <= 'true' | 'false' | '(' <BExp> ('and' | 'or') <BExp> ')' | 'not' <BExp> | <AExp> ('<'|'<='|'>'|'>='|'='|'#') <AExp>
+    <AExp>     <= <Id> | <Num> | <AExp> ('+'|'-'|'*') <AExp>
+    
+    <Id>       <= <Letter> { <Letter> | <Num> }  # where this isn't a keyword
+    <Num>      <= <Digit> { <Digit> }
 
 ## Execution
 
-So far, the IMP Interpreter only supports REPL. In the folder `imp` run the interpreter by: `java imp.Imp`.
+IMPI 2.0 allows the user to directly enter commands in the command line, and to execute IMP programs using `:l <filename>` or `:load <filename>`.
 
-If you specify `-multiline` when executing the interpreter, you can enter code until you end a line with a `!` character.
-
-It is also possible to directly enter arithmetic or boolean expressions in the REPL window which are evaluated and the result printed to the console. Right now, the error messages generated for such expressions are quite lackluster though.
+It is possible to enter arithmetic or boolean expressions which are then evaluated and the result printed to the console.
 
 ## The Language
 
-I extended the language by an additional command `print` (used the same way as `skip`) in order to print the names and values of all variables.
+I extended the language by an additional command `print` which prints the program state (the values held by all defined variables). Variables which haven't been assigned a value yet are not printed, and their default value is 0, in line with the lecture's definition of variables. In the spirit of the idea that expressions don't cause side-effects, using an unassigned variable in an expression will not add it to the program state.
 
-### Scope
+All extensions and syntactic sugar discussed in the lecture slides released so far have been added to the language (except for parallelism). This includes `abort` (which doesn't exit the shell, it only aborts the currently running list of commands!), `true`, `false`, omission of the `else` clause in an `if` statement, nondeterministic execution, variable scope as well as procedures.
 
-Note that IMP doesn't know scope: Once initialized, a variable only dies when you close the interpreter, and variables defined within sub-blocks (e.g. the body of a loop) can be used outside of that loop as well.
+The parser is relatively lax when it comes to sequences of instructions: They need to be separated by a semicolon, and they can be surrounded by parentheses (but don't have to be), and the last instruction can be terminated by a semicolon (but it doesn't have to be if the instruction sequence isn't surrounded by parentheses).
 
-A consequence of this is e.g. the following: `if <some condition> then c := 0 else d := 0 end`. If the condition holds, `c` gets defined, otherwise `d`.
+## Examples
 
-### Semicola
+### Factorial
 
-If multiple instructions are added after one another, they need to be separated by semicola. This -- as specified by the language's grammar discussed in the lecture -- even holds for `if` and `while` statements.
+This program defines a factorial function, calls it with argument 5 and then prints the program state.
 
-## Example
+    procedure fac(n; res)
+    begin
+        if n <= 1 then
+            res := 1
+        else
+            fac ((n-1); res);
+            res := (n * res)
+        end
+    end;
+    
+    fac(5; n);
+    print
+    
+The output generated by this program is:
 
-`a := 1; while a < 64 do print; a := ((a*2)+1); end` generates the following output:
+    Program State
+      n -> 120
 
-    Program State:
-      a <- 1
-    Program State:
-      a <- 3
-    Program State:
-      a <- 7
-    Program State:
-      a <- 15
-    Program State:
-      a <- 31
-    Program State:
-      a <- 63
