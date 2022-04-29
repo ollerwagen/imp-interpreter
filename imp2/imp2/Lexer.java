@@ -171,6 +171,7 @@ public class Lexer {
             case "print":     type = PRINT;     break;
             case "procedure": type = PROCEDURE; break;
             case "begin":     type = BEGIN;     break;
+            case "par":       type = PAR;       break;
             case "end":       type = END;       break;
         }
 

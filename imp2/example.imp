@@ -1,0 +1,8 @@
+procedure fac(n; res) begin
+	if n <= 1 then
+		res := 1
+	else
+		fac((n-1); res);
+		res := (n * res)
+	end
+end

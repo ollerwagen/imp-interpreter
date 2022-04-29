@@ -51,6 +51,8 @@ enum TokenType
     PROCEDURE,          // procedure
     BEGIN,              // begin
 
+    PAR,                // par
+
     END,                // end
 
     ERROR,              // any error

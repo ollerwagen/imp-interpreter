@@ -3,6 +3,10 @@ package imp2;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,13 +18,17 @@ public class Imp {
     private static Debugger debugger;
 
     public static void main(String[] args) {
-        multiline = Arrays.asList(args).contains("-multiline") ||
-                Arrays.asList(args).contains("-m");
+        List<String> input = Arrays.asList(args);
 
-        debug = Arrays.asList(args).contains("-debug") ||
-                Arrays.asList(args).contains("-d");
+        multiline = input.contains("--multiline") || input.contains("-m");
+        debug = input.contains("--debug") || input.contains("-d");
 
-        repl();
+        int argcount = (multiline ? 1 : 0) + (debug ? 1 : 0);
+        if (argcount == args.length) {
+            repl();
+        } else {
+            System.err.println("Illegal Program Argument(s).");
+        }
     }
 
     private static void repl() {
@@ -31,7 +39,11 @@ public class Imp {
         try {
             String input = readREPL(reader);
             while (input != null) {
-                run(input);
+                if (input.startsWith(":")) {
+                    runCommand(input);
+                } else {
+                    run(input);
+                }
                 input = readREPL(reader);
             }
         } catch (IOException e) {
@@ -39,6 +51,31 @@ public class Imp {
         }
 
         System.out.println();
+    }
+
+    private static void runCommand(String input) {
+        String[] args = input.split("[\\s]+");
+        if (args[0].equals(":l") || args[0].equals(":load")) {
+            if (args.length < 2) {
+                System.err.println("Need to specify at least one file to load.");
+                return;
+            }
+            for (int i = 1; i < args.length; i++) {
+                if (args[i].isEmpty()) { continue; }
+                runFile(args[i]);
+            }
+        } else {
+            System.err.println("Command not found.");
+        }
+    }
+
+    private static void runFile(String s) {
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(s));
+            run(new String(bytes, Charset.defaultCharset()));
+        } catch (IOException e) {
+            System.out.println("for filename " + s + ": " + e.getMessage());
+        }
     }
 
     private static void run(String program) {
@@ -123,5 +160,9 @@ public class Imp {
     static void logDirectError(Token token, String message) {
         System.err.println("\033[31mError at " + token + ": " + message + "\033[0m");
         markError();
+    }
+
+    private static String lastOf(String[] a) {
+        return a[a.length - 1];
     }
 }

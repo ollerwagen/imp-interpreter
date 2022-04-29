@@ -1,17 +1,24 @@
 # imp-interpreter
 
-Interpreter for the IMP programming language (FMFP thingy)
+Interpreter for the IMP programming language
 
 ## IMPI 2.0
 
-This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible. It also features a debugger (technically using that word is an insult to actual debuggers) that executes instructions one step at a time by specifying `-debug` or `-d` in the argument list when executing the program.
+This version implements the same features, I just got tired of the disgusting parser for the first version. It uses error productions to improve error messages and its parser is slightly less terrible.
 
 IMPI 2.0 can be compiled in the directory `imp2` with `javac imp2/*.java` and executed by `java imp2.Imp`, followed by the program arguments.
 
-## Compilation
+It features a debugger (`-d` or `--debug` when executing the interpreter), and it allows multiline input (`-m` or `--multiline`), where the input must be terminated by a `!`.
 
-In the folder `imp`, Compile the IMP Interpreter with `javac imp/*.java`
-The Interpreter is already compiled though, so this step is not necessary unless you change some code because you think you're better than me, motherfucker.
+## Grammar
+
+The following is the grammar of IMP used for this interpreter, specified in EBNF:
+
+    <S>        <= <OuterStm> | <BExp> | <AExp>
+    <OuterStm> <= <Stm> | <ProcDef>
+    <Stm>      <= <Single> | <Assign> | <If> | <While> | <Scope> | <Seq> | <Nd> | <Call>
+    
+    <ProcDef>  <= procedure <Id> ( [ { <Id>, } <Id> ] ; [ { <Id>, } <Id> ] ) begin <Stm> end
 
 ## Execution
 
