@@ -287,6 +287,11 @@ class Parser {
             expect("Procedure Definitions must begin with a 'begin' keyword.", 0.95, BEGIN);
             Stm body = parseStm(false);
             expect("Procedure Definitions must be closed with an 'end' token.", 0.95, END);
+            
+            if (containsDuplicates(in) || containsDuplicates(out)) {
+                throw new ParseFail(name, "Procedure Arguments must be pairwise distinct (input and ouput).", 0.95);
+            }
+
             return new Stm.ProcDef(name, in, out, body);
         } catch (ParseFail fail) {
             index = prev_index;
@@ -322,6 +327,9 @@ class Parser {
                 out.add(expect("Procedure Call return value list must be terminated by a closing parenthesis.", 0.95, IDENTIFIER).lexeme);
             }
             advance(); // ')' token
+            if (containsDuplicates(out)) {
+                throw new ParseFail(name, "Procedure Arguments must be pairwise distinct.", 0.95);
+            }
             return new Stm.ProcCall(name, in, out);
         } catch (ParseFail fail) {
             index = prev_index;
@@ -629,6 +637,17 @@ class Parser {
 
     private void logError(Token token, String message) {
         Imp.logDirectError(token, message);
+    }
+
+    private static <T> boolean containsDuplicates(List<T> l) {
+        for (int i = 0; i < l.size() - 1; i++) {
+            for (int j = i + 1; j < l.size(); j++) {
+                if (l.get(i).equals(l.get(j))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
 
