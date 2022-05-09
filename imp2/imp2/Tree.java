@@ -11,6 +11,7 @@ abstract class Stm {
         T visitAssign(Assign stm);
         T visitIf(If stm);
         T visitWhile(While stm);
+        T visitFor(For stm);
         T visitVar(Var stm);
         T visitSeq(Seq stm);
         T visitNd(Nd stm);
@@ -22,7 +23,7 @@ abstract class Stm {
     }
 
     static class Single extends Stm {
-        enum Type { SKIP, PRINT, ABORT }
+        enum Type { SKIP, PRINT, ABORT, BREAK }
         Type type;
 
         Single(Type type) {
@@ -78,6 +79,24 @@ abstract class Stm {
         @Override
         <T> T accept(Visitor<T> visitor) {
             return visitor.visitWhile(this);
+        }
+    }
+
+    static class For extends Stm {
+        String loopvar;
+        AExp start, end;
+        Stm body;
+
+        For(String loopvar, AExp start, AExp end, Stm body) {
+            this.loopvar = loopvar;
+            this.start = start;
+            this.end = end;
+            this.body = body;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor) {
+            return visitor.visitFor(this);
         }
     }
 

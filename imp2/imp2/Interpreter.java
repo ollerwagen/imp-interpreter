@@ -54,6 +54,8 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
             }
         } else if (stm.type == Stm.Single.Type.ABORT) {
             throw new InterpreterAbort();
+        } else if (stm.type == Stm.Single.Type.BREAK) {
+            throw new InterpreterBreak();
         }
         return null;
     }
@@ -73,9 +75,25 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
     }
 
     public Void visitWhile(Stm.While stm) {
-        while (stm.condition.accept(this)) {
-            stm.body.accept(this);
-        }
+        try {
+            while (stm.condition.accept(this)) {
+                stm.body.accept(this);
+            }
+        } catch (InterpreterBreak b) {}
+
+        return null;
+    }
+
+    public Void visitFor(Stm.For stm) {
+        try {
+            for (variables.put(stm.loopvar, stm.start.accept(this));
+                !variables.get(stm.loopvar).equals(stm.end.accept(this));
+                variables.put(stm.loopvar, variables.get(stm.loopvar) + 1)) {
+                
+                stm.body.accept(this);
+            }
+        } catch (InterpreterBreak b) {}
+
         return null;
     }
 
@@ -201,6 +219,7 @@ class Interpreter implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visi
     }
 
     private static class InterpreterAbort extends RuntimeException {}
+    private static class InterpreterBreak extends RuntimeException {}
 
     private static class InterpreterException extends RuntimeException {
         Token token;

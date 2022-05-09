@@ -42,8 +42,13 @@ enum TokenType
     TRUE,               // true
     FALSE,              // false
 
+    BREAK,              // break
+
     DO,                 // do
     WHILE,              // while
+
+    FOR,                // for
+    TO,                 // to
 
     SKIP,               // skip
     PRINT,              // print

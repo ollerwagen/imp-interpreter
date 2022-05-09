@@ -69,6 +69,8 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
         awaitEnter(true);
         if (stm.type == Stm.Single.Type.ABORT) {
             throw new DebugAbort();
+        } else if (stm.type == Stm.Single.Type.BREAK) {
+            throw new DebugBreak();
         }
         return null;
     }
@@ -98,12 +100,29 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
 
     public Void visitWhile(Stm.While stm) {
         System.out.println(indent + stm.accept(printer));
-        while (stm.condition.accept(this)) {
-            System.out.print(indent + "\033[33m" + stm.condition.accept(printer) + "\033[0m");
-            awaitEnter(false);
-            System.out.println("   \033[2m<loop condition evaluates to true>\033[0m");
-            stm.body.accept(this);
-        }
+        try {
+            while (stm.condition.accept(this)) {
+                System.out.print(indent + "\033[33m" + stm.condition.accept(printer) + "\033[0m");
+                awaitEnter(false);
+                System.out.println("   \033[2m<loop condition evaluates to true>\033[0m");
+                stm.body.accept(this);
+            }
+        } catch (DebugBreak b) {}
+
+        return null;
+    }
+
+    public Void visitFor(Stm.For stm) {
+        System.out.println(indent + stm.accept(printer));
+        try {
+            for (variables.put(stm.loopvar, stm.start.accept(this));
+                !variables.get(stm.loopvar).equals(stm.end.accept(this));
+                variables.put(stm.loopvar, variables.get(stm.loopvar) + 1)) {
+
+                System.out.println("  \033[2m<loop variable " + stm.loopvar + " set to " + variables.get(stm.loopvar) + ">\033[0m");
+                stm.body.accept(this);
+            }
+        } catch (DebugBreak b) {}
         return null;
     }
 
@@ -247,6 +266,7 @@ class Debugger implements Stm.Visitor<Void>, BExp.Visitor<Boolean>, AExp.Visitor
     }
 
     static class DebugAbort extends RuntimeException {}
+    static class DebugBreak extends RuntimeException {}
 
     static class DebugException extends RuntimeException {
         Token token;

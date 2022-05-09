@@ -22,7 +22,7 @@ class Parser {
         ParseFail fail = new ParseFail(null, null, -1);
 
         try {
-            Stm result = parseStm(true);
+            Stm result = parseStm(true, false);
             if (index < tokens.size() - 1) {
                 throw new ParseFail(peek(), "Unexpected Token.", 1);
             }
@@ -55,17 +55,17 @@ class Parser {
         return null;
     }
 
-    private Stm parseStm(boolean allowProcDefs) {
+    private Stm parseStm(boolean allowProcDefs, boolean allowBreak) {
         int prev_index = index;
 
         try {
             List<Stm> stms = new ArrayList<>();
-            stms.add(parseSingleInstruction(allowProcDefs));
+            stms.add(parseSingleInstruction(allowProcDefs, allowBreak));
 
             while (peek().type == SEMICOLON) {
                 advance(); // ';' token
                 try {
-                    Stm next = parseSingleInstruction(true);
+                    Stm next = parseSingleInstruction(true, false);
                     stms.add(next);
                 } catch (ParseFail fail) {
                     break;
@@ -85,16 +85,16 @@ class Parser {
         }
     }
 
-    private Stm parseSingleInstruction(boolean allowProcDefs) {
-        return parseSingleInstruction(true, allowProcDefs);
+    private Stm parseSingleInstruction(boolean allowProcDefs, boolean allowBreak) {
+        return parseSingleInstruction(true, allowProcDefs, allowBreak);
     }
 
-    private Stm parseSingleInstruction(boolean allowNd, boolean allowProcDefs) {
+    private Stm parseSingleInstruction(boolean allowNd, boolean allowProcDefs, boolean allowBreak) {
         ParseFail fail = new ParseFail(null, null, -1);
 
         if (allowNd) {
             try {
-                return parseStmNd();
+                return parseStmNd(allowBreak);
             } catch (ParseFail f) {
                 fail = (fail.likelihood >= f.likelihood) ? fail : f;
             }
@@ -112,25 +112,35 @@ class Parser {
         }
 
         try {
-            return parseStmSeq();
+            return parseStmSeq(allowBreak);
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
-            return parseStmSingle();
+            Stm res = parseStmSingle(allowBreak);
+            if (((Stm.Single) res).type == Stm.Single.Type.BREAK && !allowBreak) {
+                throw new ParseFail(tokens.get(index - 1), "'break' only allowed inside loop.", 1.0);
+            }
+            return res;
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
-            return parseStmIf();
+            return parseStmIf(allowBreak);
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
 
         try {
             return parseStmWhile();
+        } catch (ParseFail f) {
+            fail = (fail.likelihood >= f.likelihood) ? fail : f;
+        }
+
+        try {
+            return parseStmFor();
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
@@ -142,7 +152,7 @@ class Parser {
         }
 
         try {
-            return parseStmVar();
+            return parseStmVar(allowBreak);
         } catch (ParseFail f) {
             fail = (fail.likelihood >= f.likelihood) ? fail : f;
         }
@@ -155,19 +165,19 @@ class Parser {
         }
     }
 
-    private Stm parseStmNd() {
+    private Stm parseStmNd(boolean allowBreak) {
         int prev_index = index;
 
         try {
-            Stm first = parseSingleInstruction(false, false);
+            Stm first = parseSingleInstruction(false, false, allowBreak);
             expect("Expect '|' between nondeterministically separated instructions.", 0.2, PIPE);
-            Stm second = parseSingleInstruction(false, false);
+            Stm second = parseSingleInstruction(false, false, allowBreak);
             List<Stm> stms = new ArrayList<>();
             stms.add(first);
             stms.add(second);
             while (peek().type == PIPE) {
                 advance(); // '|' token
-                stms.add(parseSingleInstruction(false, false));
+                stms.add(parseSingleInstruction(false, false, allowBreak));
             }
             return new Stm.Nd(stms);
         } catch (ParseFail fail) {
@@ -176,14 +186,14 @@ class Parser {
         }
     }
 
-    private Stm parseStmSeq() {
+    private Stm parseStmSeq(boolean allowBreak) {
         int prev_index = index;
 
         try {
             expect("Statement Sequences can be surrounded by parentheses.", -0.01, LPAREN);
-            Stm first = parseSingleInstruction(true, false);
+            Stm first = parseSingleInstruction(true, false, allowBreak);
             expect("Statement Sequences must separate statements by semicola.", 0.95, SEMICOLON);
-            Stm second = parseSingleInstruction(true, false);
+            Stm second = parseSingleInstruction(true, false, allowBreak);
             List<Stm> stms = new ArrayList<>();
             stms.add(first);
             stms.add(second);
@@ -192,7 +202,7 @@ class Parser {
                 if (peek().type == RPAREN) {
                     throw new ParseFail(peek(), "Expected Statement in Statement Sequence.", 0.95);
                 }
-                stms.add(parseSingleInstruction(true, false));
+                stms.add(parseSingleInstruction(true, false, allowBreak));
             }
             expect("Statement Sequences that open with a parenthesis must be closed by one.", 0.95, RPAREN);
             return new Stm.Seq(stms);
@@ -202,11 +212,17 @@ class Parser {
         }
     }
 
-    private Stm parseStmSingle() {
-        Token t = expect("Expect 'print', 'skip' or 'abort' for single statement.", 0.1, PRINT, SKIP, ABORT);
+    private Stm parseStmSingle(boolean allowBreak) {
+        Token t = expect("Expect 'print', 'skip', 'break' or 'abort' for single statement.", 0.1, PRINT, SKIP, BREAK, ABORT);
         switch (t.type) {
             case PRINT: return new Stm.Single(Stm.Single.Type.PRINT);
             case SKIP:  return new Stm.Single(Stm.Single.Type.SKIP);
+            case BREAK:
+                if (allowBreak) {
+                    return new Stm.Single(Stm.Single.Type.BREAK);
+                } else {
+                    throw new ParseFail(t, "'break' not allowed outside of 'for' or 'while' loop.", 1.0);
+                }
             default:    return new Stm.Single(Stm.Single.Type.ABORT);
         }
     }
@@ -225,18 +241,18 @@ class Parser {
         }
     }
 
-    private Stm parseStmIf() {
+    private Stm parseStmIf(boolean allowBreak) {
         int prev_index = index;
 
         try {
             expect("Expect 'if' Token in Conditional Statement.", 0, IF);
             BExp condition = parseBooleanWithErrorProductions();
             expect("Expect 'then' Token in 'if' Statement.", 0.95, THEN);
-            Stm taken = parseStm(false);
+            Stm taken = parseStm(false, allowBreak);
             Stm notTaken = new Stm.Single(Stm.Single.Type.SKIP);
             if (peek().type == ELSE) {
                 advance(); // 'else' token
-                notTaken = parseStm(false);
+                notTaken = parseStm(false, allowBreak);
             }
             expect("Expect 'end' Token in 'if' Statement.", 0.95, END);
             return new Stm.If(condition, taken, notTaken);
@@ -253,9 +269,29 @@ class Parser {
             expect("Expect 'while' Token in Loop Statement.", 0, WHILE);
             BExp condition = parseBooleanWithErrorProductions();
             expect("Expect 'do' Token in 'while' Statement.", 0.95, DO);
-            Stm body = parseStm(false);
+            Stm body = parseStm(false, true);
             expect("Expect 'end' Token in 'while' Statement.", 0.95, END);
             return new Stm.While(condition, body);
+        } catch (ParseFail fail) {
+            index = prev_index;
+            throw fail;
+        }
+    }
+
+    private Stm parseStmFor() {
+        int prev_index = index;
+
+        try {
+            expect("Expect 'for' Token in Loop Statement.", 0, FOR);
+            Token name = expect("'for' loops must start with a loop variable name.", 0.9, IDENTIFIER);
+            expect("Variable assignment in 'for' loop must be preceded by the assignment operator ':='.", 0.95, ASSIGN);
+            AExp start = parseArithmeticWithErrorProductions();
+            expect("'for' loop bounds must be separated by 'to'.", 0.95, TO);
+            AExp end = parseArithmeticWithErrorProductions();
+            expect("'for' loops must use 'do' to start the loop body.", 0.95, DO);
+            Stm body = parseStm(false, true);
+            expect("Expect 'end' Token in 'for' statement.", 0.95, END);
+            return new Stm.For(name.lexeme, start, end, body);
         } catch (ParseFail fail) {
             index = prev_index;
             throw fail;
@@ -285,7 +321,7 @@ class Parser {
             }
             advance(); // ')' token
             expect("Procedure Definitions must begin with a 'begin' keyword.", 0.95, BEGIN);
-            Stm body = parseStm(false);
+            Stm body = parseStm(false, false);
             expect("Procedure Definitions must be closed with an 'end' token.", 0.95, END);
             
             if (containsDuplicates(in) || containsDuplicates(out)) {
@@ -337,7 +373,7 @@ class Parser {
         }
     }
 
-    private Stm parseStmVar() {
+    private Stm parseStmVar(boolean allowBreak) {
         int prev_index = index;
 
         try {
@@ -346,7 +382,7 @@ class Parser {
             expect("Expect ':=' in scope block variable definition.", 0.95, ASSIGN);
             AExp decl = parseArithmeticWithErrorProductions();
             expect("Expect 'in' in scope block definition.", 0.95, IN);
-            Stm body = parseStm(false);
+            Stm body = parseStm(false, allowBreak);
             expect("Expect 'end' at the end of a scope block.", 0.95, END);
             return new Stm.Var(name, decl, body);
         } catch (ParseFail fail) {

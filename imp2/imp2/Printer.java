@@ -21,6 +21,7 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
         switch (stm.type) {
             case PRINT: return "print";
             case SKIP:  return "skip";
+            case BREAK: return "break";
             default:    return "abort";
         }
     }
@@ -37,6 +38,11 @@ class Printer implements Stm.Visitor<String>, BExp.Visitor<String>, AExp.Visitor
     public String visitWhile(Stm.While stm) {
         return "while " + stm.condition.accept(this) + " do " +
             stm.body.accept(this) + " end";
+    }
+
+    public String visitFor(Stm.For stm) {
+        return "for " + stm.loopvar + " := " + stm.start.accept(this) + " to " +
+            stm.end.accept(this) + " do " + stm.body.accept(this) + " end";
     }
 
     public String visitVar(Stm.Var stm) {

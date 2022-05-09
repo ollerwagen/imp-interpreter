@@ -33,4 +33,21 @@ procedure findPrimes(c;) begin
 		end;
 		a := (a + 1)
 	end
+end;
+
+procedure randToMax(m; n) begin
+	n := 0;
+	while m > 0 do
+		a := 0 | a := 1;
+		n := ((2 * n) + a);
+		m := (m - 1)
+	end
+end;
+
+procedure randPrime(m; p) begin
+	q := 0;
+	while q = 0 do
+		randToMax(m; p);
+		isPrime(p; q)
+	end
 end

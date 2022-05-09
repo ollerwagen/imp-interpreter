@@ -166,6 +166,9 @@ public class Lexer {
             case "true":      type = TRUE;      break;
             case "false":     type = FALSE;     break;
             case "do":        type = DO;        break;
+            case "break":     type = BREAK;     break;
+            case "for":       type = FOR;       break;
+            case "to":        type = TO;        break;
             case "while":     type = WHILE;     break;
             case "skip":      type = SKIP;      break;
             case "print":     type = PRINT;     break;
