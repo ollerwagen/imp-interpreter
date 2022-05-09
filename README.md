@@ -21,10 +21,11 @@ The following is the grammar of IMP used for this interpreter, specified in EBNF
     
     <ProcDef>  <= 'procedure' <Id> '(' [ { <Id> ',' } <Id> ] ; [ { <Id> ',' } <Id> ] ')' 'begin' <Stm> 'end'
     
-    <Single>   <= 'abort' | 'print' | 'skip'
+    <Single>   <= 'abort' | 'print' | 'skip' | 'break'
     <Assign>   <= <Id> ':=' <AExp>
     <If>       <= 'if' <BExp> 'then' <Stm> [ 'else' <Stm> ] 'end'
     <While>    <= 'while' <BExp> 'do' <Stm> 'end'
+    <For>      <= 'for' <Id> ':=' <AExp> 'to' <AExp> 'do' <Stm> 'end'
     <Scope>    <= 'var' <Assign> 'in' <Stm> 'end'
     <Seq>      <= '(' <Stm> ';' <Stm> { ';' <Stm> } ')' | <Stm> { ';' <Stm> } [;]
     <Nd>       <= <Stm> '|' <Stm> { '|' <Stm> }
